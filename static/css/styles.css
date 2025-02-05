@@ -1,0 +1,118 @@
+/* General Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Chat App Frame Styles */
+.outerframe {
+    width: 90%;
+    max-width: 600px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+/* Header Styles */
+.frameheader {
+    background-color: black;
+    padding: 20px;
+    text-align: center;
+}
+
+.frametitle {
+    color: #fff;
+    margin: 0;
+}
+
+/* Chat History Diaplay Styles */
+.chatdisplaycontainer {
+    padding: 20px;
+    height: 400px;
+    background-color: #f9f9f9;
+    overflow-y: auto;
+    border-bottom: 1px solid #ccc;
+}
+
+.user, .bot {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    clear: both;
+    word-wrap: break-word;
+}
+
+.user {
+    background-color: rgb(87, 145, 162);
+    color: #fff;
+    float: right;
+}
+
+.bot {
+    background-color: rgb(121, 133, 130);
+    color: #fff;
+    float: left;
+}
+
+/* Chat Input Container Styles */
+.chatinputcontainer {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Form Styles */
+.entryform, .exitform {
+    display: flex;
+    width: 100%;
+    margin: 5px 0;
+}
+
+.inputbox {
+    width: 85%;
+    padding: 10px;
+    border: 2px solid #ccc;
+    border-radius: 20px;
+    margin-right: 10px;
+    outline: none;
+}
+
+.submitbutton {
+    width: 40px;
+    height: 40px;
+    background: url('/static/send-icon.png') no-repeat center center;
+    background-size: cover;
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+.exitbutton {
+    background-color: rgb(99, 94, 94);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+    text-align: center;
+}
+
+.exitbutton:hover {
+    background-color: black;
+}
+
+.exitbutton:focus, .submitbutton:focus, .inputbox:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}

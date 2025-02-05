@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Shopping Assistant</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="outerframe">
+        <div class="frameheader">
+            <h1 class="frametitle">Laptop Shopping Assistant</h1>
+        </div>
+        <div class="chatdisplaycontainer" id="chatcontainer">
+            {% for chat in chat_thread %}
+            <div class="{% if chat.bot %}bot{% else %}user{% endif %}">
+                {% if chat.bot %}
+                {{ chat.bot }}
+                {% else %}
+                {{ chat.user }}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chatinputcontainer">
+            <form action="/chat" method="POST" class="entryform">
+                <input type="text" name="user_message" class="inputbox" placeholder="Enter your message here...">
+                <button type="submit" class="submitbutton"></button>
+            </form>
+            <form action="/exit" method="POST" class="exitform">
+                <button type="submit" class="exitbutton">End Conversation</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function scrollToBottom() {
+            var chatContainer = document.getElementById('chatcontainer');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        window.onload = scrollToBottom;
+    </script>
+</body>
+</html>
