@@ -5,6 +5,59 @@ import pandas as pd
 import json
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
+# Define the function descriptions those will be called by chatbot at relevant points in conversation
+
+function_descriptions = [
+            {
+                "name": "compare_laptops_with_user",
+                "description": "Get the top 3 laptops from the catalogue, that best matches what the user is asking based on 'GPU intensity','Display quality','Portability','Multitasking','Processing speed' & 'Budget",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "GPU intensity": {
+                            "type": "string",
+                            "description": "The requirement of the user in GPU capacity classfied as low, medium or high" ,
+                        },
+                        "Display quality": {
+                            "type": "string",
+                            "description": "The requirement of the user for Laptop's Display Quality & capacity classfied as low, medium or high" ,
+                        },
+                        "Portability": {
+                            "type": "string",
+                            "description": "The requirement of the user for Laptop's portability classfied as low, medium or high" ,
+                        },
+                        "Multitasking": {
+                            "type": "string",
+                            "description": "The requirement of the user for Laptop's Multitasking classfied as low, medium or high" ,
+                        },
+                        "Processing speed": {
+                            "type": "string",
+                            "description": "The requirement of the user for Laptop's Processing speed classfied as low, medium or high" ,
+                        },
+                        "Budget": {
+                            "type": "integer",
+                            "description": "The maximum budget of the user" ,
+                        },
+
+                    },
+                    "required": ["GPU intensity","Display quality","Portability","Multitasking","Processing speed","Budget"],
+                },
+            },
+            {
+            "name": "findBestHotels",
+            "description": "Find the best 5 hotels for a given destination",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "destination": {
+                        "type": "string",
+                        "description": "The desired travel destination"
+                        }
+                    }
+                }   
+            }
+        ]
+
 # Define a function that initializes a conversation for an intelligent laptop gadget expert system
 
 def initialize_conversation():
@@ -29,10 +82,12 @@ def initialize_conversation():
                         'Budget': "_"}
 
     system_message = f"""
-    You are an intelligent laptop gadget expert and your goal is to find the best laptop for a user.
+    You are an intelligent laptop gadget expert and your goal is to find the best laptop for a user. So, you only help with questions around laptop.
     You need to ask relevant questions and understand the user profile by analysing the user's responses.
     You final objective is to fill the values for the different keys ('GPU intensity','Display quality','Portability','Multitasking','Processing speed','Budget') in the python dictionary and be confident of the values.
     These key value pairs define the user's profile.
+    After understanding user's requirements, you'll use a function call to suggest the top 3 laptops with their respective user match score.
+    Recommend these laptops and answer any user's query about them.
     The python dictionary looks like this
     {{'GPU intensity': 'values','Display quality': 'values','Portability': 'values','Multitasking': 'values','Processing speed': 'values','Budget': 'values'}}
     The value for 'Budget' should be a numerical value extracted from the user's response.
@@ -46,8 +101,15 @@ def initialize_conversation():
     - Do not randomly assign values to any of the keys.
     - The values need to be inferred from the user's response.
     {delimiter}
+    Recommend the top 3 laptops in the following format:
+    Start with a brief summary of each laptop in the following format, in decreasing order of price of laptops:
+    1. <Laptop Name> : <Major specifications of the laptop>, <Price in Rs>
+    2. <Laptop Name> : <Major specifications of the laptop>, <Price in Rs>
+    3. <Laptop Name> : <Major specifications of the laptop>, <Price in Rs>
+    {delimiter}
 
     To fill the dictionary, you need to have the following chain of thoughts:
+    Don't ask questions about more than 2 keys at a time strictly.
     Follow the chain-of-thoughts below and only output the final updated python dictionary for the keys as described in {example_user_req}. \n
     {delimiter}
     Thought 1: Ask a question to understand the user's profile and requirements. \n
@@ -64,6 +126,7 @@ def initialize_conversation():
     Ask questions you might have for all the keys to strengthen your understanding of the user's profile.
     If yes, move to the next Thought. If no, ask question on the keys whose values you are unsure of. \n
     It is a good practice to ask question with a sound logic as opposed to directly citing the key you want to understand value for.
+    Don't ask questions about more than 2 keys at a time strictly.
     {delimiter}
 
     {delimiter}
@@ -101,6 +164,7 @@ def get_chat_completions(input, json_format = False):
     system_message_json_output = """<<. Return output in JSON format to the key output.>>"""
 
     # If the output is required to be in JSON format
+    # The below section is used by product_map_layer function receiving a JSON output of ChatCompletion Message Content
     if json_format == True:
         # Append the input prompt to include JSON response as specified by OpenAI
         input[0]['content'] += system_message_json_output
@@ -110,18 +174,25 @@ def get_chat_completions(input, json_format = False):
             model = MODEL,
             messages = input,
             response_format = { "type": "json_object"},
+            # temperature=0, # this is the degree of randomness of the model's output
+            # functions=function_descriptions,
+            # function_call="auto",
             seed = 1234)
 
         output = json.loads(chat_completion_json.choices[0].message.content)
 
-    # No JSON return type specified
+    # No JSON return type specified; Enabled with Function calling mechanism
+    # The below section is used by all other functions receiving a raw message output from ChatCompletion API
     else:
         chat_completion = openai.chat.completions.create(
             model = MODEL,
             messages = input,
+            temperature=0, # this is the degree of randomness of the model's output
+            functions=function_descriptions,
+            function_call="auto",
             seed = 2345)
 
-        output = chat_completion.choices[0].message.content
+        output = chat_completion.choices[0].message
 
     return output
 
@@ -317,6 +388,21 @@ def product_map_layer(laptop_description):
 # Sort the laptops based on their scores in descending order. \
 # Return the top 3 laptops as a JSON-formatted string.
 
+# This is a helper function for compare_laptops_with_user to extract the dictionary from chat response
+def extract_dictionary_from_string(string):
+    regex_pattern = r"\{[^{}]+\}"
+
+    dictionary_matches = re.findall(regex_pattern, string)
+
+    # Extract the first dictionary match and convert it to lowercase
+    if dictionary_matches:
+        dictionary_string = dictionary_matches[0]
+        # dictionary_string = dictionary_string.lower()
+
+        # Convert the dictionary string to a dictionary object using ast.literal_eval()
+        dictionary = ast.literal_eval(dictionary_string)
+    return dictionary
+
 def compare_laptops_with_user(user_req_string):
     laptop_df = pd.read_csv('updated_laptop.csv')
 
@@ -327,6 +413,8 @@ def compare_laptops_with_user(user_req_string):
 
     # Extracting the budget value from user_requirements and converting it to an integer
     budget = int(user_requirements.get('Budget', '0')) #.replace(',', '').split()[0])
+    print("Budget received: " + str(budget))
+
     # budget
     # # Creating a copy of the DataFrame and filtering laptops based on the budget
     filtered_laptops = laptop_df.copy()
@@ -342,8 +430,10 @@ def compare_laptops_with_user(user_req_string):
     # # # Iterating over each laptop in the filtered DataFrame to calculate scores based on user requirements
     for index, row in filtered_laptops.iterrows():
         user_product_match_str = row['laptop_feature']
-        laptop_values = user_product_match_str
-        laptop_values = dictionary_present(user_product_match_str)
+        # laptop_values = user_product_match_str
+        # laptop_values = dictionary_present(user_product_match_str)
+        laptop_values = extract_dictionary_from_string(user_product_match_str)
+        print("Laptop values: " + str(laptop_values))
         score = 0
 
     #     # Comparing user requirements with laptop features and updating scores

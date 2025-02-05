@@ -28,7 +28,7 @@ app = Flask(__name__)
 chat_gui = []
 # Let's initialise the conversation
 conversation = initialize_conversation()
-introduction = get_chat_completions(conversation)
+introduction = get_chat_completions(conversation).content
 chat_gui.append({'bot':introduction})
 top_3_laptops = None
 
@@ -46,7 +46,7 @@ if not os.path.exists(filename):
 # Create the API for default url
 @app.route("/")
 def default_func():
-    global chat_gui, top_3_laptops
+    global chat_gui, conversation, top_3_laptops, conversation_reco
     return render_template("chat_gui.html", chat_thread = chat_gui)
 
 # Create the API to end the conversation
@@ -55,7 +55,7 @@ def exit_conv():
     global chat_gui, conversation, top_3_laptops
     chat_gui = []
     conversation = initialize_conversation()
-    introduction = get_chat_completions(conversation)
+    introduction = get_chat_completions(conversation).content
     chat_gui.append({'bot':introduction})
     top_3_laptops = None
     return redirect(url_for('default_func'))
@@ -65,73 +65,106 @@ def exit_conv():
 def converse():
     global chat_gui, conversation, top_3_laptops, conversation_reco
     user_input = request.form["user_message"]
-    prompt = 'Remember your system message and that you are an intelligent laptop assistant. So, you only help with questions around laptop.'
+    # prompt = 'Remember your system message and that you are an intelligent laptop assistant. So, you only help with questions around laptop.'
     moderation = moderation_check(user_input)
     if moderation == 'Flagged':
         return redirect(url_for('exit_conv'))
 
-    if top_3_laptops is None:
-        conversation.append({"role": "user", "content": user_input + prompt})
-        chat_gui.append({'user':user_input})
+    # if top_3_laptops is None:
+    conversation.append({"role": "user", "content": user_input})
+    chat_gui.append({'user':user_input})
 
-        response_assistant = get_chat_completions(conversation)
+    response_assistant = get_chat_completions(conversation)
+    print("Response Assistant-0:")
+    print(response_assistant)
 
+    if response_assistant.function_call:
+    
+        # confirmation = intent_confirmation_layer(response_assistant)
 
-        moderation = moderation_check(response_assistant)
-        if moderation == 'Flagged':
-            return redirect(url_for('exit_conv'))
+        # print('Intent confirmation is' + confirmation.get('result'))
 
-        confirmation = intent_confirmation_layer(response_assistant)
+        # moderation = moderation_check(confirmation.get('result'))
+        # if moderation == 'Flagged':
+        #     return redirect(url_for('exit_conv'))
 
-        print('Intent confirmation is' + confirmation.get('result'))
+        # if "No" in confirmation.get('result'):
+        #     conversation.append({"role": "assistant", "content": response_assistant})
+        #     chat_gui.append({'bot':response_assistant})
+        # else:
 
-        moderation = moderation_check(confirmation.get('result'))
-        if moderation == 'Flagged':
-            return redirect(url_for('exit_conv'))
+        # response = dictionary_present(response_assistant)
+        print("Response Assistant:")
+        print(response_assistant)
 
-        if "No" in confirmation.get('result'):
-            conversation.append({"role": "assistant", "content": response_assistant})
-            chat_gui.append({'bot':response_assistant})
+        chat_gui.append({'bot':"Thank you for providing all the information. Kindly wait, while I fetch the products: \n"})
+        
+        function_name = response_assistant.function_call.name
+        function_args = json.loads(response_assistant.function_call.arguments)
+        # top_3_laptops = compare_laptops_with_user(response)
+        print("Function Name: " + function_name)
+        print("\nArgument: " + str(function_args))
+        # top_3_laptops = function_name(function_args)
+        if function_name == 'compare_laptops_with_user':
+            top_3_laptops = compare_laptops_with_user(function_args)
         else:
-            # response = get_user_requirement_string(response_assistant)
-            response = dictionary_present(response_assistant)
-            # result = get_chat_completions_func_calling(response, True)
-            chat_gui.append({'bot':"Thank you for providing all the information. Kindly wait, while I fetch the products: \n"})
-            
-            top_3_laptops = compare_laptops_with_user(response)
+            return redirect(url_for('default_func'))
 
-            validated_reco = recommendation_validation(top_3_laptops)
+        validated_reco = recommendation_validation(top_3_laptops)
+        print("Reco Count: " + str(len(validated_reco)))
 
-            if len(validated_reco) == 0:
-                chat_gui.append({'bot':"Sorry, we do not have laptops that match your requirements. Connecting you to a human expert. Please end this conversation."})
+        if len(validated_reco) == 0:
+            chat_gui.append({'bot':"Sorry, we do not have laptops that match your requirements. Connecting you to a human expert. Please end this conversation."})
+            return redirect(url_for('default_func'))
 
-            conversation_reco = initialize_conv_reco(validated_reco)
-            conversation_reco.append({"role": "user", "content": "This is my user profile" + str(response)})
+        # conversation_reco = initialize_conv_reco(validated_reco)
+        # conversation_reco.append({"role": "user", "content": "This is my user profile" + str(function_args)})
+        # print(conversation_reco)
 
-            recommendation = get_chat_completions(conversation_reco)
+        # Send the info on the function call and function response to GPT
+        conversation.append({"role": "assistant", "content": f""" {response_assistant}"""})
+        conversation.append(
+            {
+                "role": "function",
+                "name": function_name,
+                "content": f""" These are the user's products: {validated_reco}""",
+            }
+        )
+        print("Conversation:")
+        print(conversation)
 
-            moderation = moderation_check(recommendation)
-            if moderation == 'Flagged':
-                return redirect(url_for('exit_conv'))
+        recommendation = get_chat_completions(conversation)    # (conversation_reco)
+        print("Recommendation:")
+        print(recommendation)
 
-            # conversation_reco.append({"role": "user", "content": "This is my user profile" + response})
-
-            conversation_reco.append({"role": "assistant", "content": recommendation})
-            chat_gui.append({'bot':recommendation})
-
-
-    else:
-        conversation_reco.append({"role": "user", "content": user_input})
-        chat_gui.append({'user':user_input})
-
-        response_asst_reco = get_chat_completions(conversation_reco)
-
-        moderation = moderation_check(response_asst_reco)
+        moderation = moderation_check(recommendation.content)
         if moderation == 'Flagged':
             return redirect(url_for('exit_conv'))
 
-        conversation.append({"role": "assistant", "content": response_asst_reco})
-        chat_gui.append({'bot':response_asst_reco})
+        conversation.append({"role": "assistant", "content": recommendation.content})
+        chat_gui.append({'bot':recommendation.content})
+    else:
+        moderation = moderation_check(response_assistant.content)
+        if moderation == 'Flagged':
+            return redirect(url_for('exit_conv'))
+        
+        conversation.append({"role": "assistant", "content": response_assistant.content})
+        chat_gui.append({'bot':response_assistant.content})
+    # else:
+    # conversation.append({"role": "user", "content": user_input})
+    # chat_gui.append({'user':user_input})
+
+    # response_asst_reco = get_chat_completions(conversation)
+    # print("Response from Assistant:")
+    # print(response_asst_reco)
+
+    # moderation = moderation_check(response_asst_reco.content)
+    # if moderation == 'Flagged':
+    #     return redirect(url_for('exit_conv'))
+
+    # conversation.append({"role": "assistant", "content": response_asst_reco.content})
+    # chat_gui.append({'bot':response_asst_reco.content})
+    
     return redirect(url_for('default_func'))
 
 if __name__ == '__main__':
