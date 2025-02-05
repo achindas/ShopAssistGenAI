@@ -63,8 +63,10 @@ The **Laptop Shop Assistant Chatbot** includes the following key functionalities
 
 The **Laptop Shop Assistant** Chatbot follows a **web-based client-server architecture** using Python and Flask. The client-side consists of a web interface where users interact with the chatbot by specifying their laptop preferences. These inputs are sent to the Flask-based server, which processes the user requests, extracts relevant requirements, and invokes OpenAI’s APIs to determine the next steps dynamically. The server then retrieves laptop specifications from a structured dataset, applies filtering logic, and generates personalized recommendations. The response is sent back to the client. This architecture enables a **scalable, lightweight, and efficient** chatbot.
 
-![Architecture Flowchart](path/to/architecture_diagram.png)
-*(Editable flowchart representation of function flows in the application should be included here.)*
+![Architecture Diagram](images/Architecture%20Diagram.png)
+
+![Application Workflow](images/App%20Workflow.png)
+
 
 ---
 
