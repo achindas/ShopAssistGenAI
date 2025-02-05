@@ -42,20 +42,7 @@ function_descriptions = [
                     },
                     "required": ["GPU intensity","Display quality","Portability","Multitasking","Processing speed","Budget"],
                 },
-            },
-            {
-            "name": "findBestHotels",
-            "description": "Find the best 5 hotels for a given destination",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "destination": {
-                        "type": "string",
-                        "description": "The desired travel destination"
-                        }
-                    }
-                }   
-            }
+            },            
         ]
 
 # Define a function that initializes a conversation for an intelligent laptop gadget expert system
@@ -394,10 +381,9 @@ def extract_dictionary_from_string(string):
 
     dictionary_matches = re.findall(regex_pattern, string)
 
-    # Extract the first dictionary match and convert it to lowercase
+    # Extract the first dictionary match
     if dictionary_matches:
         dictionary_string = dictionary_matches[0]
-        # dictionary_string = dictionary_string.lower()
 
         # Convert the dictionary string to a dictionary object using ast.literal_eval()
         dictionary = ast.literal_eval(dictionary_string)
@@ -408,12 +394,11 @@ def compare_laptops_with_user(user_req_string):
 
     user_requirements = user_req_string
 
-    # Extracting user requirements from the input string (assuming it's a dictionary)
-    # Since the function parameter already seems to be a string, we'll use it directly instead of extracting from a dictionary
+    # Extracting user requirements from the input dictionary
 
     # Extracting the budget value from user_requirements and converting it to an integer
-    budget = int(user_requirements.get('Budget', '0')) #.replace(',', '').split()[0])
-    print("Budget received: " + str(budget))
+    budget = int(user_requirements.get('Budget', '0'))
+    # print("Budget received: " + str(budget))
 
     # budget
     # # Creating a copy of the DataFrame and filtering laptops based on the budget
@@ -421,24 +406,21 @@ def compare_laptops_with_user(user_req_string):
     filtered_laptops['Price'] = filtered_laptops['Price'].str.replace(',', '').astype(int)
     filtered_laptops = filtered_laptops[filtered_laptops['Price'] <= budget].copy()
     # filtered_laptops
-    # # # Mapping string values 'low', 'medium', 'high' to numerical scores 0, 1, 2
+    # Mapping string values 'low', 'medium', 'high' to numerical scores 0, 1, 2
     mappings = {'low': 0, 'medium': 1, 'high': 2}
 
-    # # # Creating a new column 'Score' in the filtered DataFrame and initializing it to 0
+    # Creating a new column 'Score' in the filtered DataFrame and initializing it to 0
     filtered_laptops['Score'] = 0
 
-    # # # Iterating over each laptop in the filtered DataFrame to calculate scores based on user requirements
+    # Iterating over each laptop in the filtered DataFrame to calculate scores based on user requirements
     for index, row in filtered_laptops.iterrows():
         user_product_match_str = row['laptop_feature']
-        # laptop_values = user_product_match_str
-        # laptop_values = dictionary_present(user_product_match_str)
         laptop_values = extract_dictionary_from_string(user_product_match_str)
-        print("Laptop values: " + str(laptop_values))
+
         score = 0
 
     #     # Comparing user requirements with laptop features and updating scores
         for key, user_value in user_requirements.items():
-            # if key.lower() == 'budget':
             if key == 'Budget':
                 continue  # Skipping budget comparison
             laptop_value = laptop_values.get(key, None)
