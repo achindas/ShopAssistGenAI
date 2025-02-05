@@ -86,16 +86,16 @@ This function maps raw product descriptions into structured specifications, enab
 ### **5. `compare_laptops_with_user()`**
 This function compares available laptops against the user’s specified requirements (budget, performance, screen size, etc.) and ranks the best matches. It filters out unsuitable options and presents the top recommendations.
 
-### **5. `recommendation_validation()`**
+### **6. `recommendation_validation()`**
 Once all inputs are gathered, this function validates the top laptop matches based on a weighted scoring system. The chatbot then presents the recommendations in a user-friendly format.
 
-### **6. `/chat API - converse()`**
+### **7. `/chat API - converse()`**
 This function implements the `/chat` API which essentially maintains the conversation with User, identifies relevant constraints from user responses, such as **preferred processor type, screen resolution, GPU needs, and price range**, ensuring accurate product recommendations.
 
-### **7. `/map API - map_laptops()`**
+### **8. `/map API - map_laptops()`**
 This function implements `/map` API that can be called directly to create product mapping whenever there are new/ modified laptop data.
 
-### **<center>Application Snapshots</center>**
+### **Application Snapshots**
 
 ![Application Snapshots](images/App%20Snapshots.png)
 
